@@ -1,23 +1,40 @@
 const Company = require("../models/Company");
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
+const Joi = require("joi");
 
-exports.signup = async (req, res) => {
+// validation schemas
+const signupSchema = Joi.object({
+  companyName: Joi.string().min(3).required(),
+  name: Joi.string().min(2).required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required(),
+});
+
+const loginSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
+});
+
+exports.signup = async (req, res, next) => {
   try {
+
+    const { error } = signupSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
     const { companyName, name, email, password } = req.body;
 
-    // 0/ Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // 1. Create Company
     const company = await Company.create({
       name: companyName,
     });
 
-    // 2. Create Admin User
     const user = await User.create({
       name,
       email,
@@ -26,7 +43,6 @@ exports.signup = async (req, res) => {
       companyId: company._id,
     });
 
-    // 3. Generate JWT
     const token = jwt.sign(
       {
         id: user._id,
@@ -41,14 +57,20 @@ exports.signup = async (req, res) => {
       message: "Company registered successfully",
       token,
     });
+
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
+
+    const { error } = loginSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
     const { email, password } = req.body;
 
     const user = await User.findOne({ email }).populate("companyId");
@@ -74,7 +96,8 @@ exports.login = async (req, res) => {
     );
 
     res.json({ token });
+
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };

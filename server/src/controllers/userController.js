@@ -1,57 +1,93 @@
 const User = require("../models/User");
 const crypto = require("crypto");
-const jwt = require("jsonwebtoken");
-const sendEmail = require("../utils/sendEmail"); // You will create this
+const sendEmail = require("../utils/sendEmail");
+const Joi = require("joi");
 
-// POST /api/users - Admin adds a user (invite)
-exports.addUser = async (req, res) => {
+const addUserSchema = Joi.object({
+  name: Joi.string().min(2).required(),
+  email: Joi.string().email().required(),
+  role: Joi.string().valid("admin", "manager", "member").required(),
+});
+
+const setPasswordSchema = Joi.object({
+  token: Joi.string().required(),
+  password: Joi.string().min(6).required(),
+});
+
+const addUser = async (req, res, next) => {
   try {
+
+    const { error } = addUserSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
     const { name, email, role } = req.body;
 
-    // 1. Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    // 2. Generate temporary token for invite
     const inviteToken = crypto.randomBytes(20).toString("hex");
-
-    // 3. Create user with temporary password
     const tempPassword = crypto.randomBytes(8).toString("hex");
+
     const user = await User.create({
       name,
       email,
-      password: tempPassword, // will be hashed automatically by User schema
+      password: tempPassword,
       role,
-      companyId: req.user.companyId, // tied to admin's company
-      inviteToken, // store token to validate later
+      companyId: req.user.companyId,
+      inviteToken,
     });
 
-    // 4. Send HTML invite email
     const inviteLink = `${process.env.FRONTEND_URL}/set-password?token=${inviteToken}`;
+
     await sendEmail({
       to: email,
       subject: "You're invited to join TeamBoard Pro",
-      html: `
-        <h2>Welcome to TeamBoard Pro</h2>
-        <p>Hi ${name},</p>
-        <p>Click the button below to set your password and join your company:</p>
-        <a href="${inviteLink}" style="display:inline-block;padding:10px 20px;background:#4CAF50;color:white;text-decoration:none;border-radius:5px;">Set Password</a>
-        <p>If you didn't expect this invitation, you can ignore this email.</p>
-      `,
+      html: `<p>Hi ${name}, click here to join: <a href="${inviteLink}">Set Password</a></p>`,
     });
 
     res.status(201).json({
       message: "User invited successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     });
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
+};
+
+const setPassword = async (req, res, next) => {
+  try {
+
+    const { error } = setPasswordSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const { token, password } = req.body;
+
+    const user = await User.findOne({ inviteToken: token });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+
+    user.password = password;
+    user.inviteToken = undefined;
+
+    await user.save();
+
+    res.json({ message: "Password set successfully" });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = {
+  addUser,
+  setPassword,
 };
