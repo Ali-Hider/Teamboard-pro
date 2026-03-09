@@ -28,9 +28,14 @@ const userSchema = new mongoose.Schema(
       ref: "Company",
       required: true,
     },
+    inviteToken: {
+     type: String,
+     default: null,
+},
   },
   { timestamps: true }
 );
+userSchema.index({ inviteToken: 1 });
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
 

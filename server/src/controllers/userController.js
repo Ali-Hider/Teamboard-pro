@@ -51,7 +51,13 @@ const addUser = async (req, res, next) => {
 
     res.status(201).json({
       message: "User invited successfully",
-      user,
+      user: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            companyId: user.companyId,
+     },
     });
 
   } catch (error) {
@@ -76,7 +82,7 @@ const setPassword = async (req, res, next) => {
     }
 
     user.password = password;
-    user.inviteToken = undefined;
+    user.inviteToken = null;
 
     await user.save();
 
@@ -87,7 +93,21 @@ const setPassword = async (req, res, next) => {
   }
 };
 
+const getUsers = async (req, res, next) => {
+  try {
+    const users = await User.find(
+      { companyId: req.user.companyId },
+      "name email role"   // only return these fields, never password
+    );
+
+    res.json({ users });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   addUser,
   setPassword,
+  getUsers,
 };

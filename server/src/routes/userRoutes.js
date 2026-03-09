@@ -9,5 +9,7 @@ router.post("/", authMiddleware, roleMiddleware(["admin"]), userController.addUs
 
 // Optional: User sets password from invite
 router.post("/set-password", userController.setPassword);
+// new route — all authenticated users can see team members
+router.get("/", authMiddleware, userController.getUsers);
 
 module.exports = router;
