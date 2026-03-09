@@ -1,4 +1,6 @@
 const Project = require("../models/Project");
+
+const Task = require("../models/Task");
 const Joi = require("joi");
 
 const projectSchema = Joi.object({
@@ -42,7 +44,7 @@ exports.getProjects = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(limit);
 
-    const total = await Project.countDocuments({ companyId: req.user.companyId });
+    const total = await Project.countDocuments({ companyId: req.user.companyId, isDeleted: false });
 
     res.json({
       page,

@@ -24,5 +24,6 @@ const projectSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+projectSchema.index({ companyId: 1, isDeleted: 1 });
 
 module.exports = mongoose.model("Project", projectSchema);

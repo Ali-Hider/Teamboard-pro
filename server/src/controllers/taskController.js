@@ -10,6 +10,11 @@ const taskSchema = Joi.object({
   assignedTo: Joi.string().required(),
 });
 
+const updateStatusSchema = Joi.object({
+  taskId: Joi.string().required(),
+  status: Joi.string().valid("pending", "in-progress", "completed").required(),
+});
+
 exports.createTask = async (req, res, next) => {
   try {
 
@@ -70,7 +75,7 @@ exports.getTasks = async (req, res, next) => {
       .skip((page - 1) * limit)
       .limit(limit);
 
-    const total = await Task.countDocuments({ companyId: req.user.companyId });
+    const total = await Task.countDocuments({ companyId: req.user.companyId, isDeleted: false });
 
     res.json({
       page,
@@ -86,6 +91,11 @@ exports.getTasks = async (req, res, next) => {
 
 exports.updateTaskStatus = async (req, res, next) => {
   try {
+
+    const { error } = updateStatusSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
 
     const { taskId, status } = req.body;
 
