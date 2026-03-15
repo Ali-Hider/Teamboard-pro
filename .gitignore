@@ -15,4 +15,6 @@ pnpm-debug.log*
 
 # Optional: build outputs or coverage
 dist/
-coverage/
+coverage/client/node_modules/
+client/.env
+client/dist/
