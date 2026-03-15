@@ -1,663 +1,306 @@
-# TeamBoard Pro – Backend API
+# TeamBoard Pro
 
-⚠️ **Frontend implementation is currently in progress.**
-This repository currently contains the **backend REST API** for the system.
+A full-stack multi-tenant SaaS project management application built with Node.js, Express, MongoDB, and React.
 
----
-
-# Project Overview
-
-TeamBoard Pro is a **multi-tenant project management backend system** built with **Node.js, Express, and MongoDB**.
-
-It allows organizations to manage:
-
-* Companies
-* Users
-* Projects
-* Tasks
-
-The system demonstrates **real-world backend engineering practices** such as:
-
-* JWT Authentication
-* Role-Based Authorization
-* Multi-tenant architecture
-* Soft deletion strategy
-* Pagination for scalable data retrieval
-* Modular Express architecture
-
-The goal of this project is to demonstrate **backend system design and API architecture similar to production SaaS applications**.
+Organizations can manage their team, projects, and tasks from a single workspace with role-based access control.
 
 ---
 
-# System Architecture
-
-The backend follows a **layered architecture** separating routing, middleware, controllers, and database models.
-
-Architecture overview:
-
+## Live Architecture
 ```
-Client Application
+React Frontend (Vite)
         ↓
- Express Router Layer
+Axios (JWT interceptor)
         ↓
-Middleware Layer (Authentication / Authorization)
+Express REST API
         ↓
- Controller Layer (Business Logic)
+Middleware (Auth + Role)
         ↓
-   Model Layer (Mongoose ODM)
+Controllers (Business Logic)
         ↓
- MongoDB Database
-```
-
-Architectural Principles Used
-
-- Separation of concerns
-- Modular route handling
-- Middleware-driven request pipeline
-- Controller-based business logic
-- Model-driven data management
----
-
-# Request Lifecycle
-
-A typical API request follows this flow:
-
-```
-Request
-→ Express Route
-→ Authentication Middleware
-→ Authorization Middleware
-→ Controller Logic
-→ Database Query via Mongoose
-→ JSON Response
-```
-
-This structure keeps the application **modular, maintainable, and scalable**.
-
----
-
-# Core Features
-
-## Authentication
-
-The system uses **JWT (JSON Web Token)** authentication.
-
-Features:
-
-* Secure password hashing using **bcrypt**
-* JWT token generation during login
-* Protected routes using authentication middleware
-
-Authentication Flow:
-
-```
-User Login
-    ↓
-Password Verification
-    ↓
-JWT Token Generated
-    ↓
-Client Stores Token
-    ↓
-Token Used for Future API Requests
+Mongoose ODM
+        ↓
+MongoDB Atlas
 ```
 
 ---
 
-## Role-Based Authorization
+## Tech Stack
 
-Users belong to a company and have a **role**.
-
-Roles supported:
-
-* `admin`
-* `manager`
-* `member`
-
-Role permissions:
-
-**admin**
-* Full system control
-* Manage users, projects, and tasks
-
-**manager**
-* Create and manage projects
-* Manage tasks
-
-**member**
-* View projects
-* Update assigned tasks
-
-Authorization is enforced using **middleware** before executing controller logic.
-
----
-
-## Multi-Tenant Architecture
-
-The system supports **multiple companies using the same backend infrastructure**.
-
-Each document contains a:
-
-* `companyId`
-
-Every database query filters data by companyId so that users can only access their own organization's data.
-
-Example query pattern:
-
-```javascript
-Project.find({
-  companyId: req.user.companyId,
-  isDeleted: false
-})
-```
-
-This ensures **data isolation between companies**.
-
----
-
-## Soft Deletion Strategy
-
-Instead of permanently deleting records, the system uses **soft deletion**.
-
-Each entity contains:
-
-* `isDeleted: Boolean`
-
-When a resource is deleted, this field becomes `true`.
-
-Benefits:
-
-* Data recovery
-* Historical records
-* Safer production behavior
-
-Normal queries exclude deleted resources.
-
----
-
-# Technology Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Runtime | Node.js |
-| Framework | Express.js |
-| Database | MongoDB |
-| ODM | Mongoose |
-| Authentication | JSON Web Token (JWT) |
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React, Vite, Tailwind CSS |
+| State Management | Redux Toolkit |
+| Routing | React Router v6 |
+| HTTP Client | Axios |
+| Backend | Node.js, Express.js |
+| Database | MongoDB, Mongoose |
+| Authentication | JWT (JSON Web Token) |
 | Password Security | bcrypt |
-| Environment Management | dotenv |
+| Email | Resend |
+| Validation | Joi |
 
 ---
 
-# Folder Structure
+## Features
 
+### Authentication
+- Company + admin user created on signup in one request
+- JWT authentication with role, name, and companyId in payload
+- Invite-based onboarding — admin invites users via email with a secure token link
+- Protected routes on both frontend and backend
+
+### Role Based Access Control
+
+| Action | Admin | Manager | Member |
+|--------|-------|---------|--------|
+| View projects | ✅ | ✅ | ✅ |
+| Create / Edit / Delete projects | ✅ | ✅ | ❌ |
+| View tasks | ✅ | ✅ | ✅ |
+| Create tasks | ✅ | ✅ | ❌ |
+| Update any task status | ✅ | ✅ | ❌ |
+| Update own task status | ✅ | ✅ | ✅ |
+| Invite team members | ✅ | ❌ | ❌ |
+| View team members | ✅ | ✅ | ✅ |
+
+### Multi-Tenant Architecture
+- Every database query filters by `companyId`
+- Complete data isolation between companies
+
+### Soft Delete Strategy
+- Projects and tasks use `isDeleted: true` instead of permanent deletion
+- Deleting a project cascades soft delete to all its tasks
+
+### Pagination
+- Projects and tasks support `?page=1&limit=10` query params
+- Response includes `total`, `totalPages`, `page`
+
+---
+
+## Project Structure
 ```
-server
+teamboard-pro/
 │
-├── server.js
-├── package.json
+├── server/
+│   ├── server.js
+│   ├── package.json
+│   └── src/
+│       ├── app.js
+│       ├── config/
+│       │   └── db.js
+│       ├── controllers/
+│       │   ├── authController.js
+│       │   ├── userController.js
+│       │   ├── projectController.js
+│       │   └── taskController.js
+│       ├── middlewares/
+│       │   ├── authMiddleware.js
+│       │   ├── roleMiddleware.js
+│       │   └── errorHandler.js
+│       ├── models/
+│       │   ├── Company.js
+│       │   ├── User.js
+│       │   ├── Project.js
+│       │   └── Task.js
+│       ├── routes/
+│       │   ├── authRoutes.js
+│       │   ├── userRoutes.js
+│       │   ├── projectRoutes.js
+│       │   └── taskRoutes.js
+│       └── utils/
+│           └── sendEmail.js
 │
-└── src
-    ├── app.js
-    │
-    ├── controllers
-    │   ├── authController.js
-    │   ├── userController.js
-    │   ├── projectController.js
-    │   └── taskController.js
-    │
-    ├── models
-    │   ├── Company.js
-    │   ├── User.js
-    │   ├── Project.js
-    │   └── Task.js
-    │
-    ├── routes
-    │   ├── authRoutes.js
-    │   ├── userRoutes.js
-    │   ├── projectRoutes.js
-    │   └── taskRoutes.js
-    │
-    ├── middlewares
-    │   ├── authMiddleware.js
-    │   ├── roleMiddleware.js
-    │   └── errorHandler.js
-    │
-    └── config
-        └── db.js
-```
-
----
-### Relationship Explanation
-
-**Company**
-- A company can have multiple users
-- A company can have multiple projects
-
-**User**
-- Belongs to a company
-- Can create projects
-- Can be assigned tasks
-
-**Project**
-- Belongs to a company
-- Created by a user
-- Contains multiple tasks
-
-**Task**
-- Belongs to a project
-- Assigned to a user
----
-
-# Database ER Diagram
-
-Below is the conceptual relationship between entities:
-
-```                Company
-                   │
-                   │ 1 : N
-                   │
-        ┌──────────┴──────────┐
-        │                     │
-        │                     │
-       User                Project
-        │                     │
-        │ creates             │ 1 : N
-        └───────────────►     │
-                              │
-                              ▼
-                            Task
-                              │
-                              │ assignedTo
-                              │
-                              ▼
-                            User
+└── client/
+    ├── index.html
+    ├── vite.config.js
+    ├── package.json
+    └── src/
+        ├── api/
+        │   ├── axiosInstance.js
+        │   ├── auth.js
+        │   ├── users.js
+        │   ├── projects.js
+        │   └── tasks.js
+        ├── components/
+        │   ├── Layout.jsx
+        │   ├── Navbar.jsx
+        │   ├── Sidebar.jsx
+        │   ├── Footer.jsx
+        │   ├── ProtectedRoute.jsx
+        │   ├── RoleGuard.jsx
+        │   └── Pagination.jsx
+        ├── context/
+        │   ├── AuthContext.jsx
+        │   └── ToastContext.jsx
+        ├── pages/
+        │   ├── Landing.jsx
+        │   ├── Login.jsx
+        │   ├── Signup.jsx
+        │   ├── SetPassword.jsx
+        │   ├── Dashboard.jsx
+        │   ├── Projects.jsx
+        │   ├── Tasks.jsx
+        │   └── Team.jsx
+        └── store/
+            ├── store.js
+            ├── projectsSlice.js
+            └── tasksSlice.js
 ```
 
 ---
 
-# Database Design
+## API Endpoints
 
+### Auth
+```
+POST /api/auth/signup     — create company + admin user
+POST /api/auth/login      — login and receive JWT
+```
 
-## Company
+### Users
+```
+POST   /api/users               — admin only, invite user via email
+POST   /api/users/set-password  — public, set password from invite token
+GET    /api/users               — authenticated, get all company members
+```
 
-Fields:
+### Projects
+```
+POST   /api/projects      — admin/manager
+GET    /api/projects      — all roles, paginated
+PUT    /api/projects/:id  — admin/manager
+DELETE /api/projects/:id  — admin/manager, soft delete + cascades tasks
+```
 
-* `name`
-* `subscriptionType`
-* `isDeleted`
-
-Represents an organization using the system.
-
----
-
-## User
-
-Fields:
-
-* `name`
-* `email`
-* `password`
-* `role`
-* `companyId`
-* `isDeleted`
-
-Relationships:
-
-* Belongs to a Company
-* Can create Projects
-* Can be assigned Tasks
+### Tasks
+```
+POST   /api/tasks         — admin/manager
+GET    /api/tasks         — all roles, paginated
+PATCH  /api/tasks/status  — all roles (members only own tasks)
+```
 
 ---
 
-## Project
+## Data Models
 
-Fields:
+### JWT Payload
+```json
+{
+  "id": "userId",
+  "companyId": "companyId",
+  "role": "admin | manager | member",
+  "name": "User Name"
+}
+```
 
-* `name`
-* `description`
-* `companyId`
-* `createdBy`
-* `status`
-* `isDeleted`
+### Request / Response Examples
 
-Relationships:
-
-* Belongs to a Company
-* Created by a User
-* Contains multiple Tasks
-
----
-
-## Task
-
-Fields:
-
-* `title`
-* `description`
-* `projectId`
-* `assignedTo`
-* `companyId`
-* `status`
-* `isDeleted`
-
-Relationships:
-
-* Belongs to a Project
-* Assigned to a User
-
----
-
-# API Endpoints
-
-## Authentication
-
+**Signup**
 ```
 POST /api/auth/signup
+Body: { companyName, name, email, password }
+Response: { message, token }
+```
+
+**Login**
+```
 POST /api/auth/login
+Body: { email, password }
+Response: { token }
 ```
 
----
-
-## Users
-
+**Create Project**
 ```
-GET /api/users
-GET /api/users/:id
-PUT /api/users/:id
-DELETE /api/users/:id
-POST /api/users/invite
-```
-
----
-
-## Projects
-
-```
-GET /api/projects
 POST /api/projects
-GET /api/projects/:id
-PUT /api/projects/:id
-DELETE /api/projects/:id
+Headers: Authorization: Bearer <token>
+Body: { name, description }
+Response: { project }
 ```
 
----
-
-## Tasks
-
+**Create Task**
 ```
-GET /api/tasks
 POST /api/tasks
-GET /api/tasks/:id
-PUT /api/tasks/:id
-DELETE /api/tasks/:id
+Headers: Authorization: Bearer <token>
+Body: { title, description, projectId, assignedTo }
+Response: { task }
+```
+
+**Update Task Status**
+```
+PATCH /api/tasks/status
+Headers: Authorization: Bearer <token>
+Body: { taskId, status }
+Response: { task }
 ```
 
 ---
 
-# API Example Requests
+## Local Setup
 
-These examples demonstrate how the API is expected to be consumed.
+### Prerequisites
+- Node.js
+- MongoDB Atlas account
+- Resend account (for email invites)
 
----
-
-## User Registration
-
-**Endpoint:** `POST /api/auth/signup`
-
-**Request Body:**
-
-```json
-{
-  "name": "Ali Hider",
-  "email": "ali@example.com",
-  "password": "123456",
-  "companyName": "Tech Corp"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "User registered successfully",
-  "token": "jwt_token_here"
-}
-```
-
----
-
-## User Login
-
-**Endpoint:** `POST /api/auth/login`
-
-**Request Body:**
-
-```json
-{
-  "email": "ali@example.com",
-  "password": "123456"
-}
-```
-
-**Response:**
-
-```json
-{
-  "token": "jwt_token_here",
-  "user": {
-    "id": "user_id",
-    "name": "Ali Hider",
-    "role": "admin"
-  }
-}
-```
-
----
-
-## Create Project
-
-**Endpoint:** `POST /api/projects`
-
-**Headers:**
-
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-**Request Body:**
-
-```json
-{
-  "name": "Website Redesign",
-  "description": "Revamp company website"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Project created successfully",
-  "project": {
-    "id": "project_id",
-    "name": "Website Redesign"
-  }
-}
-```
-
----
-
-## Get Projects (Pagination)
-
-**Endpoint:** `GET /api/projects?page=1&limit=10`
-
-**Headers:**
-
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-**Response:**
-
-```json
-{
-  "totalProjects": 25,
-  "currentPage": 1,
-  "totalPages": 3,
-  "projects": [
-    {
-      "id": "project_id",
-      "name": "Website Redesign"
-    }
-  ]
-}
-```
-
----
-
-## Create Task
-
-**Endpoint:** `POST /api/tasks`
-
-**Headers:**
-
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-**Request Body:**
-
-```json
-{
-  "title": "Design homepage",
-  "description": "Create UI design for homepage",
-  "projectId": "project_id",
-  "assignedTo": "user_id"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "Task created successfully"
-}
-```
-
----
-
-# Data Protection Strategy
-
-The system follows a soft delete strategy to prevent accidental data loss.
-
-Instead of removing documents permanently:
-```
-isDeleted: true
-```
-is set when a resource is deleted.
-
-Normal queries automatically filter:
-
-{ isDeleted: false }
-
-Benefits:
-
-Data recovery
-
-Historical tracking
-
-Safer production behavior
----
-
-# Pagination
-
-Large datasets can be retrieved using pagination.
-
-Example:
-
-```
-GET /api/projects?page=1&limit=10
-```
-
-Advantages:
-
-* Reduces server load
-* Improves performance
-* Enables scalable APIs
-
----
-
-# Environment Setup
-
-Create a `.env` file inside the server folder.
-
-```
-PORT=5000
-
-MONGODB_URI=mongodb://localhost:27017/teamboard
-
-JWT_SECRET=your_secret_key
-```
-
----
-
-# Installation
-
-**Clone the repository**
-
+### Backend
 ```bash
-git clone <repository_url>
-```
-
-**Install dependencies**
-
-```bash
+cd server
 npm install
 ```
 
-**Run development server**
-
+Create `server/.env`:
+```
+PORT=5000
+MONGO_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret
+RESEND_API_KEY=your_resend_api_key
+FRONTEND_URL=http://localhost:5173
+```
 ```bash
 npm run dev
 ```
 
----
+### Frontend
+```bash
+cd client
+npm install
+npm run dev
+```
 
-# Future Improvements
-
-Planned improvements:
-
-* Redis caching
-* API rate limiting
-* WebSocket real-time updates
-* Docker containerization
-* CI/CD pipeline
-* API documentation with Swagger
+Open `http://localhost:5173`
 
 ---
 
-# Frontend (Coming Soon)
+## Database Indexes
 
-The frontend will be built using **React**.
+Indexes added for query performance:
 
-Planned features:
-
-* Project dashboard
-* Task management interface
-* User management panel
-* Role-based UI
-* Responsive design
+| Model | Index |
+|-------|-------|
+| User | `inviteToken` |
+| Project | `companyId + isDeleted` |
+| Task | `companyId + isDeleted`, `projectId`, `assignedTo` |
 
 ---
 
-# Author
+## Future Improvements
 
-Backend Engineering Portfolio Project
+- Real-time updates with WebSockets
+- Redis caching for frequently accessed data
+- API rate limiting on auth endpoints
+- Refresh token mechanism
+- Docker containerization
+- CI/CD pipeline
+- Swagger API documentation
+- File attachments on tasks
 
-Built to demonstrate:
+---
 
-* REST API design
-* Backend architecture
-* Authentication systems
-* Multi-tenant data modeling
+## Author
+
+Built as a full-stack portfolio project to demonstrate:
+- REST API design and backend architecture
+- Multi-tenant SaaS data modeling
+- JWT authentication and role-based access control
+- React frontend architecture with Redux and Context
+- Full stack integration
