@@ -48,6 +48,7 @@ exports.signup = async (req, res, next) => {
         id: user._id,
         companyId: company._id,
         role: user.role,
+        name: user.name // include name in token for easy access on frontend
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -90,6 +91,7 @@ exports.login = async (req, res, next) => {
         id: user._id,
         companyId: user.companyId._id,
         role: user.role,
+        name: user.name 
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
