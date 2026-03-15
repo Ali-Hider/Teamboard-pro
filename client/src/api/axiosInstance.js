@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Create a custom axios instance with your backend URL as the base
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://teamboard-pro.onrender.com/api",
 });
 
 // Interceptor — runs before every request automatically
