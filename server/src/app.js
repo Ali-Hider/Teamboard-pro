@@ -6,7 +6,7 @@ const errorHandler = require("./middlewares/errorHandler");
 
 // CORS must be first
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: "https://teamboard-pro.vercel.app",
   credentials: true,
 }));
 
